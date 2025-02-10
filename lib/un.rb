@@ -366,7 +366,13 @@ def httpd
     s = WEBrick::HTTPServer.new(options)
     shut = proc {s.shutdown}
     siglist = %w"TERM QUIT"
-    siglist.concat(%w"HUP INT") if STDIN.tty?
+    if STDIN.tty?
+      siglist.concat(%w"HUP INT")
+      Thread.start {
+        s.logger.info "Ignored STDIN input" while STDIN.gets
+        s.shutdown
+      }
+    end
     siglist &= Signal.list.keys
     siglist.each do |sig|
       Signal.trap(sig, shut)
